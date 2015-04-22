@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <meta charset="utf-8">
+        <title>Middleman</title>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport">
+        <link href="//favicon.ico" rel="icon" sizes="16x16" type="image/x-icon">
+        <!--[if lt IE 9]>            <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>        <![endif]-->
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+        .editor {
+            position: relative;
+            width: 100%;
+            height: 200px;
+        }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Middleman</h1>
+            <form method="post" action="/save">
+                <input name="css" type="hidden">
+                <input name="js" type="hidden">
+                <div class="form-group">
+                    <label for="url">URL</label>
+                    <input type="text" class="form-control" name="url" id="url" placeholder="http://www.example.com">
+                </div>
+                <div class="form-group">
+                    <label for="css">CSS</label>
+                    <div id="css" class="editor">body {color: red;}</div>
+                </div>
+                <div class="form-group">
+                    <label for="js">Javascript</label>
+                    <div id="js" class="editor">console.log('The middleman is here...');</div>
+                </div>
+                <button type="button" class="btn btn-default">View</button>
+            </form>
+        </div>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/ace.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/mode-css.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/mode-javascript.js"></script>
+        <script type="text/javascript">
+        $(document).ready(function() {
+            var JavaScriptMode = ace.require("ace/mode/javascript").Mode;
+            var CssMode = ace.require("ace/mode/css").Mode;
+            var cssEditor = ace.edit('css');
+            cssEditor.getSession().setMode(new CssMode());
+            var jsEditor = ace.edit('js');
+            jsEditor.getSession().setMode(new JavaScriptMode());
+            $('form button').click(function() {
+                $('form [name=css]').val(cssEditor.getValue());
+                $('form [name=js]').val(jsEditor.getValue());
+                $('form').submit();
+            });
+        });
+        </script>
+    </body>
+</html>
