@@ -2,20 +2,24 @@
 
 var express = require('express');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var request = require('request');
 var uuid = require('uuid');
 var prefixer = require('html-prefixer');
 var injector = require('./injector');
+var Url = require('url');
 
 var mods = {};
+
+var userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0';
 
 var app = express();
 
 app.use(bodyParser.json());
-
 app.use(bodyParser.urlencoded({
 	extended: true
 }));
+app.use(cookieParser());
 
 var verbose = false;
 
@@ -25,12 +29,34 @@ function log(o) {
 	}
 }
 
+// TODO: Convert to jade for editing later...
 app.use(express.static('./public'));
 
 // TODO: Delete old cached pages every few mins
 // TODO: Handle HTTPS also
 
 // Web site testing tool is getting flagged by imperva (45.55.189.121)
+
+// TODO: Add editing capability via /edit/:key ...
+
+app.get('/*', function(req, res, next) {
+	//console.log(req.path);
+	//console.log(req.cookies['middleman-id']);
+	if (req.path === '/' || req.path.indexOf('/view') === 0) {
+		next();
+	} else {
+		// Proxying async dependencies
+		// TODO: Check for errors here
+		request({
+			url: Url.resolve(mods[req.cookies['middleman-id']].url, req.path),
+			headers: {
+				'User-Agent': userAgent
+			}
+		}).pipe(res);
+	}
+});
+
+// TODO: Fetch on save... that way the view is always sending cached data...
 
 app.post('/save', function(req, res) {
 	// TODO: Run URL through validator
@@ -51,7 +77,7 @@ function fetch(mod, callback) {
 	var stream = request({
 		url: mod.url,
 		headers: {
-			'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0'
+			'User-Agent': userAgent
 		}
 	});
 	// Inject styles
@@ -60,7 +86,8 @@ function fetch(mod, callback) {
 	}
 	// Inject script
 	if (mod.js) {
-		stream = stream.pipe(injector('body', '<script type=\"text/javascript\">\n' + mod.js + '\n<\/script>\n'));
+		// TODO: head or body
+		stream = stream.pipe(injector('head', '<script type=\"text/javascript\">\n' + mod.js + '\n<\/script>\n'));
 	}
 	// Modify relative URL paths in response
 	prefixer(stream, {
@@ -71,6 +98,7 @@ function fetch(mod, callback) {
 app.get('/view/:modKey', function(req, res, next) {
 	var mod = mods[req.params.modKey];
 	if (mod) {
+		res.cookie('middleman-id', req.params.modKey);
 		if (mod.cache) {
 			log('Using cached version of ' + mod.url);
 			// Might need to write headers...
